@@ -32,6 +32,17 @@ pipeline{
             }
         }
 
+        stage('Build a Docker image') {
+            steps {
+                script {
+                    env.CURRENT_STAGE = 'Build a Docker image'
+                    echo "Current stage: ${env.CURRENT_STAGE}"
+                }
+                sh '''
+                    docker buildx build --platform linux/amd64 -t calculator-app:latest
+                '''
+            }
+        }
     }
 
     post {
