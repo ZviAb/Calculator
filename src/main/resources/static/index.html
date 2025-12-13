@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <style>
+        /* Calculator Styling - White Theme */
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .calculator {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border: 3px solid #dee2e6;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 
+                0 10px 30px rgba(0,0,0,0.15),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+            width: 320px;
+            position: relative;
+        }
+        
+        .brand {
+            text-align: center;
+            color: #333;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        
+        .screen {
+            background: #f8f9fa;
+            border: 2px inset #adb5bd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .display {
+            background: #ffffff;
+            color: #212529;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            text-align: right;
+            padding: 8px;
+            border-radius: 3px;
+            min-height: 24px;
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+        }
+        
+        .expression {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .result {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 8px;
+        }
+        
+        .btn {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border: 2px outset #dee2e6;
+            border-radius: 8px;
+            color: #212529;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            height: 45px;
+            cursor: pointer;
+            transition: all 0.1s;
+            text-shadow: none;
+            user-select: none;
+        }
+        
+        .btn:hover {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .btn:active {
+            background: linear-gradient(145deg, #e9ecef, #ffffff);
+            border: 2px inset #dee2e6;
+            transform: translateY(1px);
+        }
+        
+        .btn.number {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            color: #212529;
+        }
+        
+        .btn.operator {
+            background: linear-gradient(145deg, #007bff, #0056b3);
+            color: #fff;
+        }
+        
+        .btn.equals {
+            background: linear-gradient(145deg, #28a745, #1e7e34);
+            color: #fff;
+        }
+        
+        .btn.clear {
+            background: linear-gradient(145deg, #dc3545, #c82333);
+            color: #fff;
+        }
+        
+        .btn.wide {
+            grid-column: span 2;
+        }
+        
+        .error {
+            color: #dc3545 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="brand">CALCULATOR</div>
+        
+        <div class="screen">
+            <div class="display">
+                <div class="expression" id="expression"></div>
+                <div class="result" id="result">0</div>
+            </div>
+        </div>
+        
+        <div class="keypad">
+            <button class="btn clear" onclick="clearAll()">AC</button>
+            <button class="btn clear" onclick="clearEntry()">CE</button>
+            <button class="btn" onclick="backspace()">⌫</button>
+            <button class="btn operator" onclick="setOperation('divide')">÷</button>
+            
+            <button class="btn number" onclick="inputNumber('7')">7</button>
+            <button class="btn number" onclick="inputNumber('8')">8</button>
+            <button class="btn number" onclick="inputNumber('9')">9</button>
+            <button class="btn operator" onclick="setOperation('multiply')">×</button>
+            
+            <button class="btn number" onclick="inputNumber('4')">4</button>
+            <button class="btn number" onclick="inputNumber('5')">5</button>
+            <button class="btn number" onclick="inputNumber('6')">6</button>
+            <button class="btn operator" onclick="setOperation('subtract')">−</button>
+            
+            <button class="btn number" onclick="inputNumber('1')">1</button>
+            <button class="btn number" onclick="inputNumber('2')">2</button>
+            <button class="btn number" onclick="inputNumber('3')">3</button>
+            <button class="btn operator" onclick="setOperation('add')">+</button>
+            
+            <button class="btn number wide" onclick="inputNumber('0')">0</button>
+            <button class="btn number" onclick="inputDecimal()">.</button>
+            <button class="btn equals" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <script>
+        // Simple JavaScript - all logic is now server-side
+        const expressionDisplay = document.getElementById('expression');
+        const resultDisplay = document.getElementById('result');
+        
+        function updateDisplay(response) {
+            if (response.error) {
+                resultDisplay.textContent = 'Error';
+                resultDisplay.classList.add('error');
+                expressionDisplay.textContent = response.error;
+            } else {
+                resultDisplay.classList.remove('error');
+                resultDisplay.textContent = response.display;
+                expressionDisplay.textContent = response.expression;
+            }
+        }
+        
+        function inputNumber(num) {
+            fetch('/input', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'value=' + num
+            })
+            .then(response => response.json())
+            .then(updateDisplay);
+        }
+        
+        function inputDecimal() {
+            fetch('/decimal', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(updateDisplay);
+        }
+        
+        function setOperation(op) {
+            fetch('/operation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'op=' + op
+            })
+            .then(response => response.json())
+            .then(updateDisplay);
+        }
+        
+        function calculate() {
+            fetch('/equals', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(updateDisplay);
+        }
+        
+        function clearAll() {
+            fetch('/clear', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(updateDisplay);
+        }
+        
+        function clearEntry() {
+            fetch('/clearEntry', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(updateDisplay);
+        }
+        
+        function backspace() {
+            // Could implement server-side if needed
+            console.log('Backspace not implemented');
+        }
+        
+        // Load initial state
+        fetch('/state')
+            .then(response => response.json())
+            .then(updateDisplay);
+        
+        // Keyboard support
+        document.addEventListener('keydown', function(e) {
+            if (e.key >= '0' && e.key <= '9') {
+                inputNumber(e.key);
+            } else if (e.key === '.') {
+                inputDecimal();
+            } else if (e.key === '+') {
+                setOperation('add');
+            } else if (e.key === '-') {
+                setOperation('subtract');
+            } else if (e.key === '*') {
+                setOperation('multiply');
+            } else if (e.key === '/') {
+                e.preventDefault();
+                setOperation('divide');
+            } else if (e.key === 'Enter' || e.key === '=') {
+                calculate();
+            } else if (e.key === 'Escape') {
+                clearAll();
+            }
+        });
+    </script>
+</body>
+</html>
