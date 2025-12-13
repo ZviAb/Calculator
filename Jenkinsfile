@@ -6,9 +6,6 @@ pipeline{
         timestamps()
     }
 
-    environment {
-    }
-
     tools {
         maven 'maven-3.6.2'
         jdk 'OpenJDK-8'
