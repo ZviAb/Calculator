@@ -148,22 +148,28 @@ pipeline{
                 script {
                     env.CURRENT_STAGE = 'Health Check'
                     echo "Current stage: ${env.CURRENT_STAGE}"
+                }
+                withCredentials([
+                    usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
+                ])
+                {
+                    script {
+                        def ec2Ip = sh(
+                            script: 'cd terraform && terraform output -raw ec2_public_ip',
+                            returnStdout: true
+                        ).trim()
 
-                    def ec2Ip = sh(
-                        script: 'cd terraform && terraform output -raw ec2_public_ip',
-                        returnStdout: true
-                    ).trim()
+                        echo "Testing application on http://${ec2Ip}:8080"
 
-                    echo "Testing application on http://${ec2Ip}:8080"
-
-                    try {
-                        retry(10) {
-                            sleep(time: 30, unit: 'SECONDS')
-                            sh "curl -f -s -o /dev/null http://${ec2Ip}:8080"
+                        try {
+                            retry(10) {
+                                sleep(time: 30, unit: 'SECONDS')
+                                sh "curl -f -s -o /dev/null http://${ec2Ip}:8080"
+                            }
+                            echo "✅ Application is UP and running on http://${ec2Ip}:8080"
+                        } catch (Exception e) {
+                            error("❌ Application failed to start after 10 attempts")
                         }
-                        echo "✅ Application is UP and running on http://${ec2Ip}:8080"
-                    } catch (Exception e) {
-                        error("❌ Application failed to start after 10 attempts")
                     }
                 }
             }
