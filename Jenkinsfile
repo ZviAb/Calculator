@@ -1,10 +1,6 @@
 pipeline{
     agent any
 
-    environment {
-        AWS_DEFAULT_REGION = 'us-east-1'
-    }
-
     options {
         timeout(time: 10, unit: 'MINUTES')
         timestamps()
@@ -29,6 +25,8 @@ pipeline{
         stage('Version calculation') {
             steps {
                 script {
+                    env.CURRENT_STAGE = 'Version calculation'
+                    echo "Current stage: ${env.CURRENT_STAGE}"
                     versionCalculation()
                     sh "mvn versions:set -DnewVersion=${env.CALCULATED_VERSION}"
                 }
@@ -73,10 +71,28 @@ pipeline{
                 }
             }
         }
-        stage('Terraform Deploy') {
+
+        stage('Git tagging') {
             steps {
                 script {
-                    env.CURRENT_STAGE = 'Terraform Deploy'
+                    env.CURRENT_STAGE = 'Git tagging'
+                    echo "Current stage: ${env.CURRENT_STAGE}"
+                    sshagent(credentials: ['github']) {
+                        sh """
+                            git config user.name "jenkins"
+                            git config user.email "jenkins@example.com"
+                            git tag -a "${env.CALCULATED_VERSION}" -m "Release ${env.CALCULATED_VERSION}"
+                            git push origin "${env.CALCULATED_VERSION}"
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                script {
+                    env.CURRENT_STAGE = 'Terraform Plan'
                     echo "Current stage: ${env.CURRENT_STAGE}"
                 }
                 withCredentials([
@@ -91,26 +107,68 @@ pipeline{
                             -var="docker_image=\$DOCKER_USER/calculator-app" \
                             -var="app_version=${env.CALCULATED_VERSION}" \
                             -out=tfplan
+                    """
+                }
+            }
+        }
+
+        // ========================================
+        // MANUAL APPROVAL (Optional)
+        // Uncomment the stage below to add manual approval before Terraform Apply.
+        // Pipeline will pause and wait for user to click:
+        //   - "Apply" button -> Continue to next stage
+        //   - "Abort" button -> Fail the pipeline and stop
+        // ========================================
+        // stage('Approve Terraform Apply') {
+        //     steps {
+        //         input message: 'Review the Terraform plan. Proceed with apply?', ok: 'Apply'
+        //     }
+        // }
+
+        stage('Terraform Deploy') {
+            steps {
+                script {
+                    env.CURRENT_STAGE = 'Terraform Deploy'
+                    echo "Current stage: ${env.CURRENT_STAGE}"
+                }
+                withCredentials([
+                    usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
+                ])
+                {
+                    sh """
+                        cd terraform
                         terraform apply -auto-approve tfplan
                     """
                 }
             }
         }
 
-        stage('Git tagging') {
+        stage('Health Check') {
             steps {
                 script {
-                    sshagent(credentials: ['github']) {
-                        sh """
-                            git config user.name "jenkins"
-                            git config user.email "jenkins@example.com"
-                            git tag -a "${env.CALCULATED_VERSION}" -m "Release ${env.CALCULATED_VERSION}"
-                            git push origin "${env.CALCULATED_VERSION}"
-                        """
+                    env.CURRENT_STAGE = 'Health Check'
+                    echo "Current stage: ${env.CURRENT_STAGE}"
+
+                    def ec2Ip = sh(
+                        script: 'cd terraform && terraform output -raw ec2_public_ip',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Testing application on http://${ec2Ip}:8080"
+
+                    try {
+                        retry(10) {
+                            sleep(time: 30, unit: 'SECONDS')
+                            sh "curl -f -s -o /dev/null http://${ec2Ip}:8080"
+                        }
+                        echo "✅ Application is UP and running on http://${ec2Ip}:8080"
+                    } catch (Exception e) {
+                        error("❌ Application failed to start after 10 attempts")
                     }
                 }
             }
         }
+
     }
 
     post {
