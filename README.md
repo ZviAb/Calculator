@@ -142,7 +142,7 @@ Access the application at: `http://localhost:8080`
 
 ### Option 2: Run with Docker Only
 
-You can use the pre-built Docker image available at: [Docker Hub - zviabramovich/calculator-app](https://hub.docker.com/repository/docker/zviabramovich/calculator-app/tags)
+You can use the pre-built Docker image available at: [Docker Hub - zviabramovich/calculator-app](https://hub.docker.com/r/zviabramovich/calculator-app/tags)
 
 #### Pull the Docker Image
 ```bash
@@ -181,7 +181,7 @@ docker_image = "zviabramovich/calculator-app"
 app_version  = "v1.0.1"  # Use any available version from Docker Hub
 ```
 
-**Available Docker images:** [zviabramovich/calculator-app tags](https://hub.docker.com/repository/docker/zviabramovich/calculator-app/tags)
+**Available Docker images:** [zviabramovich/calculator-app tags]https://hub.docker.com/r/zviabramovich/calculator-app/tags)
 
 #### Deploy
 ```bash
