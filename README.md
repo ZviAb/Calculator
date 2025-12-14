@@ -20,7 +20,7 @@ A Spring Boot calculator application with a complete CI/CD pipeline using Jenkin
 - **Maven** 3.6.2 or higher
 - **JDK** OpenJDK 8 or higher
 - **Docker** (for building images)
-- **Terraform** (latest version)
+- **Terraform** (v1.14)
 - **AWS CLI** (for manual deployments)
 - **Git**
 
