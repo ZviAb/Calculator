@@ -34,7 +34,6 @@ A Spring Boot calculator application with a complete CI/CD pipeline using Jenkin
 
 ### 1. Install Required Plugins
 Install the following Jenkins plugins:
-- Pipeline
 - Git
 - Docker Pipeline
 - Maven Integration
